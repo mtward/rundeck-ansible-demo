@@ -1,0 +1,12 @@
+---
+- hosts: all
+  become: true
+  vars:
+    ansible_pipelining: true
+    myvalue: 'default'
+  gather_facts: true
+  tasks:
+    - debug:
+        var: myvalue
+    - command: hostname -I
+    - command: whoami
