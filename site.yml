@@ -6,9 +6,9 @@
     myvalue: 'default'
   gather_facts: true
   roles:
-    - linux
+    - role: linux
   tasks:
     - debug:
         var: myvalue
     - command: whoami
-    ...
+...
