@@ -5,8 +5,10 @@
     ansible_pipelining: true
     myvalue: 'default'
   gather_facts: true
+  roles:
+    - linux
   tasks:
     - debug:
         var: myvalue
-    - command: hostname -I
     - command: whoami
+    ...
