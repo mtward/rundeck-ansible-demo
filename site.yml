@@ -1,6 +1,6 @@
 ---
 - hosts: all
-  become: true
+  become: false
   vars:
     ansible_pipelining: true
     myvalue: 'default'
