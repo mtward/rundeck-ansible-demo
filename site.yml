@@ -1,6 +1,6 @@
 ---
 - hosts: all
-  become: false
+  become: true
   vars:
     ansible_pipelining: true
     myvalue: 'default'
@@ -11,4 +11,5 @@
     - debug:
         var: myvalue
     - command: whoami
+      become: false
 ...
