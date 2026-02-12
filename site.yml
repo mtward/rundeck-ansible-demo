@@ -8,8 +8,10 @@
   roles:
     - role: linux
   tasks:
-    - debug:
+    - name: Display the vaule of myvalue
+      debug:
         var: myvalue
-    - command: whoami
+    - name: Whoami from the main playbook with become false
+      command: whoami
       become: false
 ...
