@@ -1,0 +1,16 @@
+Installation instructions
+
+mkdir /var/cache/ansible_logs
+chmod 770 /var/cache/ansible_logs
+chown root:ansible_users /var/cache/ansible_logs
+
+copy sqlite_logger.py into callback_plugins in the directory containing your ansible.cfg
+
+#ansible.cfg 
+[defaults]
+#interpreter_python = auto_silent
+callbacks_enabled = sqlite_logger
+callback_plugins = ./callback_plugins
+
+Run the python flask app in the webserver of your choice.  
+Try it first with python3 app.py
