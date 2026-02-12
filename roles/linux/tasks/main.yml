@@ -1,1 +1,2 @@
-- command: whoami
+- name: Whoami from the linux role with become:
+  command: whoami
