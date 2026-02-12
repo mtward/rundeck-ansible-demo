@@ -16,5 +16,5 @@
       become: false
     - name: Ansible version check
       command: ansible --version
-      when: inventory_hostname=debian-rundeck.local
+      when: inventory_hostname == 'debian-rundeck.local'
 ...
