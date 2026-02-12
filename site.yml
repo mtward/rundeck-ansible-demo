@@ -14,4 +14,7 @@
     - name: Whoami from the main playbook with become false
       command: whoami
       become: false
+    - name: Ansible version check
+      command: ansible --version
+      when: inventory_hostname=debian-rundeck.local
 ...
