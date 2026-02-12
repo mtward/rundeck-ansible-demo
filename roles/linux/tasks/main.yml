@@ -1,1 +1,1 @@
-- command: hostname -I
+- command: whoami
