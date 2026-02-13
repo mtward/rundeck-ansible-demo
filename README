@@ -4,7 +4,7 @@ mkdir /var/cache/ansible_logs
 chmod 770 /var/cache/ansible_logs
 chown root:ansible_users /var/cache/ansible_logs
 
-copy sqlite_logger.py into callback_plugins in the directory containing your ansible.cfg
+copy sqlite_logger.py into a directory callback_plugins in the directory containing your ansible.cfg
 
 #ansible.cfg 
 [defaults]
