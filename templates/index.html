@@ -6,8 +6,8 @@
     <title>Ansible Log Viewer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .log-row { cursor: pointer; font-size: 0.9rem; }
-        .log-row:hover { background-color: #f8f9fa; }
+        .clickable-row { cursor: pointer; font-size: 0.9rem; }
+        .clickable-row:hover { background-color: #f8f9fa; }
         .details-row { background-color: #f8f9fa; }
         pre { margin: 0; white-space: pre-wrap; word-wrap: break-word; font-size: 0.85rem; }
         
@@ -30,92 +30,126 @@
 <div class="container-fluid mt-4">
     <h3 class="mb-4">Ansible Execution Logs</h3>
 
-    <div class="card p-3 mb-3 shadow-sm">
-        <div class="row g-2 mb-2">
-            <div class="col-md-2">
-                <input type="text" id="filter-host" class="form-control form-control-sm" placeholder="Host...">
-            </div>
-            <div class="col-md-2">
-                <input type="text" id="filter-playbook" class="form-control form-control-sm" placeholder="Playbook...">
-            </div>
-            <div class="col-md-2">
-                <input type="text" id="filter-module" class="form-control form-control-sm" placeholder="Module...">
-            </div>
-            <div class="col-md-4">
-                <input type="text" id="filter-task" class="form-control form-control-sm" placeholder="Task Name...">
-            </div>
-            <div class="col-md-2">
-                <select id="filter-status" class="form-select form-select-sm">
-                    <option value="ALL">All Statuses</option>
-                    <option value="CHANGED">CHANGED</option>
-                    <option value="OK">OK</option>
-                    <option value="FAILED">FAILED</option>
-                    <option value="UNREACHABLE">UNREACHABLE</option>
-                    <option value="SKIPPED">SKIPPED</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="row g-2">
-            <div class="col-md-2">
-                <input type="number" id="filter-year" class="form-control form-control-sm" placeholder="Year">
-            </div>
-            <div class="col-md-2">
-                <select id="filter-month" class="form-select form-select-sm">
-                    <option value="">Month...</option>
-                    <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
-                    <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
-                    <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
-                    <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <input type="number" id="filter-day" class="form-control form-control-sm" placeholder="Day">
-            </div>
-            <div class="col-md-2">
-                <select id="filter-hour" class="form-select form-select-sm">
-                    <option value="">Hour (All)</option>
-                    <option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option>
-                    <option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option>
-                    <option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option>
-                    <option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option>
-                    <option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option>
-                    <option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option>
-                    <option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option>
-                    <option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <button onclick="fetchLogs(1)" class="btn btn-primary btn-sm w-100">Apply Filters</button>
+    <!-- PLAYBOOK LIST VIEW -->
+    <div id="playbook-list-view">
+        <h5 class="mb-3">Playbook Runs</h5>
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Playbook Name</th>
+                            <th>UUID</th>
+                            <th>Task Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playbooks-body">
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead class="table-dark">
-                    <tr>
-                        <th class="col-time">Timestamp</th>
-                        <th class="col-host">Host</th>
-                        <th class="col-play">Playbook</th>
-                        <th class="col-mod">Module</th>
-                        <th class="col-stat">Status</th>
-                        <th>Task Name</th>
-                    </tr>
-                </thead>
-                <tbody id="logs-body">
-                    </tbody>
-            </table>
+    <!-- TASK LIST VIEW -->
+    <div id="task-list-view" style="display: none;">
+        <div class="d-flex align-items-center mb-3">
+            <button class="btn btn-secondary btn-sm me-3" onclick="showPlaybooks()">
+                &larr; Back to Playbooks
+            </button>
+            <h5 class="mb-0">Tasks for Playbook Run: <span id="current-playbook-uuid" class="text-muted small"></span></h5>
         </div>
-        <div class="card-footer d-flex justify-content-between align-items-center">
-            <span id="page-info" class="text-muted small">Page 1 of 1 (0 records)</span>
-            <nav>
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item"><button class="page-link" onclick="changePage(-1)">Previous</button></li>
-                    <li class="page-item"><button class="page-link" onclick="changePage(1)">Next</button></li>
-                </ul>
-            </nav>
+
+        <div class="card p-3 mb-3 shadow-sm">
+            <div class="row g-2 mb-2">
+                <div class="col-md-2">
+                    <input type="text" id="filter-host" class="form-control form-control-sm" placeholder="Host...">
+                </div>
+                <!-- Playbook filter is redundant here as we are inside a playbook run, but keeping it for flexibility or read-only -->
+                <div class="col-md-2">
+                    <input type="text" id="filter-playbook" class="form-control form-control-sm" placeholder="Playbook..." readonly>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" id="filter-module" class="form-control form-control-sm" placeholder="Module...">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" id="filter-task" class="form-control form-control-sm" placeholder="Task Name...">
+                </div>
+                <div class="col-md-2">
+                    <select id="filter-status" class="form-select form-select-sm">
+                        <option value="ALL">All Statuses</option>
+                        <option value="CHANGED">CHANGED</option>
+                        <option value="OK">OK</option>
+                        <option value="FAILED">FAILED</option>
+                        <option value="UNREACHABLE">UNREACHABLE</option>
+                        <option value="SKIPPED">SKIPPED</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-2">
+                <!-- Date filters might be less relevant if we filter by specific UUID, but can filter within the run -->
+                <div class="col-md-2">
+                    <input type="number" id="filter-year" class="form-control form-control-sm" placeholder="Year">
+                </div>
+                <div class="col-md-2">
+                    <select id="filter-month" class="form-select form-select-sm">
+                        <option value="">Month...</option>
+                        <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+                        <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+                        <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+                        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" id="filter-day" class="form-control form-control-sm" placeholder="Day">
+                </div>
+                <div class="col-md-2">
+                    <select id="filter-hour" class="form-select form-select-sm">
+                        <option value="">Hour (All)</option>
+                        <option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option>
+                        <option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option>
+                        <option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option>
+                        <option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option>
+                        <option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option>
+                        <option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option>
+                        <option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option>
+                        <option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button onclick="fetchLogs(1)" class="btn btn-primary btn-sm w-100">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="col-time">Timestamp</th>
+                            <th class="col-host">Host</th>
+                            <th class="col-play">Playbook</th>
+                            <th class="col-mod">Module</th>
+                            <th class="col-stat">Status</th>
+                            <th>Task Name</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-body">
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span id="page-info" class="text-muted small">Page 1 of 1 (0 records)</span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item"><button class="page-link" onclick="changePage(-1)">Previous</button></li>
+                        <li class="page-item"><button class="page-link" onclick="changePage(1)">Next</button></li>
+                    </ul>
+                </nav>
+            </div>
         </div>
     </div>
 </div>
@@ -123,16 +157,68 @@
 <script>
     let currentPage = 1;
     let totalPages = 1;
+    let currentPlaybookUUID = null;
 
-    // Run on load: Set default dates and fetch logs
+    // Run on load: Set default dates and fetch playbooks
     window.onload = function() {
         const now = new Date();
         document.getElementById('filter-year').value = now.getFullYear();
         document.getElementById('filter-month').value = now.getMonth() + 1; // JS months are 0-indexed
         document.getElementById('filter-day').value = now.getDate();
         
-        fetchLogs(1);
+        fetchPlaybooks();
     };
+
+    async function fetchPlaybooks() {
+        try {
+            const response = await fetch('/api/playbooks');
+            const result = await response.json();
+            renderPlaybooks(result.data);
+        } catch (error) {
+            console.error('Error fetching playbooks:', error);
+        }
+    }
+
+    function renderPlaybooks(data) {
+        const tbody = document.getElementById('playbooks-body');
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3 text-muted">No playbook runs found</td></tr>';
+            return;
+        }
+
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = 'clickable-row';
+            tr.onclick = () => selectPlaybook(row.playbook_uuid, row.playbook);
+            
+            tr.innerHTML = `
+                <td>${row.start_time}</td>
+                <td>${row.end_time}</td>
+                <td><strong>${row.playbook}</strong></td>
+                <td class="text-muted small">${row.playbook_uuid}</td>
+                <td><span class="badge bg-secondary">${row.task_count}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function selectPlaybook(uuid, name) {
+        currentPlaybookUUID = uuid;
+        document.getElementById('current-playbook-uuid').innerText = `${name} (${uuid})`;
+        
+        document.getElementById('playbook-list-view').style.display = 'none';
+        document.getElementById('task-list-view').style.display = 'block';
+        
+        fetchLogs(1);
+    }
+
+    function showPlaybooks() {
+        currentPlaybookUUID = null;
+        document.getElementById('playbook-list-view').style.display = 'block';
+        document.getElementById('task-list-view').style.display = 'none';
+    }
 
     document.querySelectorAll('input, select').forEach(item => {
         item.addEventListener('keypress', e => { if (e.key === 'Enter') fetchLogs(1); });
@@ -153,6 +239,10 @@
             day: document.getElementById('filter-day').value,
             hour: document.getElementById('filter-hour').value
         });
+        
+        if (currentPlaybookUUID) {
+            params.append('playbook_uuid', currentPlaybookUUID);
+        }
 
         try {
             const response = await fetch(`/api/logs?${params.toString()}`);
@@ -194,7 +284,7 @@
 
         data.forEach(row => {
             const tr = document.createElement('tr');
-            tr.className = 'log-row';
+            tr.className = 'clickable-row';
             tr.onclick = () => toggleDetails(row.id);
             
             const statusClass = `status-${row.status.split('_')[0]}`; 

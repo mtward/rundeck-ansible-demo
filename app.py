@@ -30,6 +30,41 @@ def close_connection(exception):
 def index():
     return render_template('index.html')
 
+@app.route('/api/playbooks')
+def api_playbooks():
+    db = get_db()
+    if not db:
+        return {"error": "Could not connect to database"}, 500
+
+    query = """
+        SELECT 
+            playbook_uuid, 
+            playbook, 
+            MIN(timestamp) as start_time, 
+            MAX(timestamp) as end_time,
+            COUNT(*) as task_count 
+        FROM task_logs 
+        WHERE playbook_uuid IS NOT NULL AND playbook_uuid != 'N/A'
+        GROUP BY playbook_uuid 
+        ORDER BY start_time DESC
+    """
+    
+    cur = db.cursor()
+    cur.execute(query)
+    rows = cur.fetchall()
+    
+    results = []
+    for row in rows:
+        results.append({
+            "playbook_uuid": row["playbook_uuid"],
+            "playbook": row["playbook"],
+            "start_time": row["start_time"],
+            "end_time": row["end_time"],
+            "task_count": row["task_count"]
+        })
+        
+    return {"data": results}
+
 @app.route('/api/logs')
 def api_logs():
     db = get_db()
@@ -39,6 +74,7 @@ def api_logs():
     # 1. Get filter parameters
     host = request.args.get('host', '')
     playbook = request.args.get('playbook', '')
+    playbook_uuid = request.args.get('playbook_uuid', '')
     module = request.args.get('module', '')
     task = request.args.get('task', '')
     status = request.args.get('status', 'ALL')
@@ -67,6 +103,9 @@ def api_logs():
     if playbook:
         where_clause += " AND playbook LIKE ?"
         params.append(f'%{playbook}%')
+    if playbook_uuid:
+        where_clause += " AND playbook_uuid = ?"
+        params.append(playbook_uuid)
     if module:
         where_clause += " AND module LIKE ?"
         params.append(f'%{module}%')
@@ -112,6 +151,7 @@ def api_logs():
         # Handle older rows safely
         keys = row.keys()
         pb = row["playbook"] if "playbook" in keys and row["playbook"] else "-"
+        pb_uuid = row["playbook_uuid"] if "playbook_uuid" in keys and row["playbook_uuid"] else "-"
         mod = row["module"] if "module" in keys and row["module"] else "-"
 
         results.append({
@@ -119,6 +159,7 @@ def api_logs():
             "timestamp": row["timestamp"],
             "inventory_hostname": row["inventory_hostname"],
             "playbook": pb,
+            "playbook_uuid": pb_uuid,
             "module": mod,
             "task_name": row["task_name"],
             "status": row["status"],

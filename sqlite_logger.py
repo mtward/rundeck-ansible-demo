@@ -26,6 +26,7 @@ class CallbackModule(CallbackBase):
         self.db_path = os.getenv('ANSIBLE_SQLITE_PATH', '/var/cache/ansible_logs/logs.db')
         self.db_connection = None
         self.playbook_name = "Ad-Hoc" # Default if running ad-hoc commands
+        self.playbook_uuid = "N/A"
         self._initialize_db()
 
     def _initialize_db(self):
@@ -51,6 +52,7 @@ class CallbackModule(CallbackBase):
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                     inventory_hostname TEXT,
                     playbook TEXT,
+                    playbook_uuid TEXT,
                     module TEXT,
                     task_name TEXT,
                     status TEXT,
@@ -66,6 +68,11 @@ class CallbackModule(CallbackBase):
                 pass # Column likely exists
             
             try:
+                cursor.execute("ALTER TABLE task_logs ADD COLUMN playbook_uuid TEXT")
+            except sqlite3.OperationalError:
+                pass # Column likely exists
+            
+            try:
                 cursor.execute("ALTER TABLE task_logs ADD COLUMN module TEXT")
             except sqlite3.OperationalError:
                 pass # Column likely exists
@@ -77,6 +84,8 @@ class CallbackModule(CallbackBase):
     def v2_playbook_on_start(self, playbook):
         """Capture the playbook name when execution starts."""
         self.playbook_name = os.path.basename(playbook._file_name)
+        if hasattr(playbook, '_uuid'):
+            self.playbook_uuid = playbook._uuid
 
     def _log_result(self, result, status):
         """Helper to write result to DB."""
@@ -96,9 +105,9 @@ class CallbackModule(CallbackBase):
         try:
             cursor = self.db_connection.cursor()
             cursor.execute('''
-                INSERT INTO task_logs (timestamp, inventory_hostname, playbook, module, task_name, status, result)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (datetime.datetime.now(), inventory_hostname, self.playbook_name, module_name, task_name, status, result_json))
+                INSERT INTO task_logs (timestamp, inventory_hostname, playbook, playbook_uuid, module, task_name, status, result)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (datetime.datetime.now(), inventory_hostname, self.playbook_name, self.playbook_uuid, module_name, task_name, status, result_json))
             self.db_connection.commit()
         except sqlite3.Error as e:
             self._display.warning(f"SQLite Callback Error: Could not log task: {e}")
